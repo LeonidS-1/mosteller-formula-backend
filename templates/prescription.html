@@ -1,0 +1,43 @@
+<html lang="ru">
+    <head>
+        <title>{{ .prescription.Title }}</title>
+        <link rel="stylesheet" href="/static/css/styles.css">
+    </head>
+    <body>
+        <header>
+            <a href="/" class="header-home">
+                <img src="/static/img/logo.svg" alt="Расчёт дозы по ППТ" class="header-home__icon">
+            </a>
+        </header>
+        <div class="prescription-detail">
+            <div class="prescription-detail__header-card">
+                <h1 class="prescription-detail__title">{{ .prescription.Title }}</h1>
+                <p class="prescription-detail__description">{{ .prescription.Description }}</p>
+            </div>
+            <table class="dose-table">
+                <thead>
+                    <tr>
+                        <th class="dose-table__col-photo">Изображение</th>
+                        <th>Препарат</th>
+                        <th>Рост (см)</th>
+                        <th>Вес (кг)</th>
+                        <th>Доза (мг)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .prescription.Drugs }}
+                    <tr>
+                        <td class="dose-table__col-photo">
+                            <img src="http://localhost:9000/test/{{ .Drug.Image }}" alt="{{ .Drug.Title }}">
+                        </td>
+                        <td>{{ .Drug.Title }}</td>
+                        <td>{{ .HeightCm }}</td>
+                        <td>{{ .WeightKg }}</td>
+                        <td class="dose-table__col-result">{{ printf "%.1f" .PediatricDoseMg }} мг</td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </body>
+</html>

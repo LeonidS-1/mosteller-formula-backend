@@ -1,0 +1,55 @@
+<html lang="ru">
+    <head>
+        <title>{{ .drug.Title }} — Подробная информация</title>
+        <link rel="stylesheet" href="/static/css/styles.css">
+    </head>
+    <body>
+        <header>
+            <a href="/" class="header-home">
+                <img src="/static/img/logo.svg" alt="Расчёт дозы по ППТ" class="header-home__icon">
+            </a>
+        </header>
+        <div class="detail-wrapper">
+            <div class="detail-card">
+                <div class="detail-card__video-wrap">
+                    <video class="detail-card__video" controls autoplay muted loop>
+                        <source src="http://localhost:9000/test/{{ .drug.Video }}" type="video/mp4">
+                    </video>
+                </div>
+                <div class="detail-card__body">
+                    <h1 class="detail-card__title">{{ .drug.Title }}</h1>
+                    <div class="detail-card__coefficients">
+                        <div class="detail-card__coeff-item detail-card__coeff-item--latency">
+                            <span class="detail-card__coeff-label">Разовая доза для взрослых</span>
+                            <span class="detail-card__coeff-value">{{ printf "%.0f" .drug.AdultDoseMg }} мг</span>
+                        </div>
+                        <div class="detail-card__coeff-item detail-card__coeff-item--throughput">
+                            <span class="detail-card__coeff-label">Доза на м² площади поверхности тела (ППТ)</span>
+                            <span class="detail-card__coeff-value">{{ printf "%.0f" .drug.DosePerM2Mg }} мг/м²</span>
+                        </div>
+                        <div class="detail-card__coeff-item detail-card__coeff-item--reliability">
+                            <span class="detail-card__coeff-label">Максимальная суточная доза</span>
+                            <span class="detail-card__coeff-value">{{ printf "%.0f" .drug.MaxDailyMg }} мг</span>
+                        </div>
+                    </div>
+                    <p class="detail-card__description">{{ .drug.Description }}</p>
+                    {{ if .hasDoseInfo }}
+                    <hr class="detail-card__separator">
+                    <h2 class="detail-card__section-title">Параметры пациента</h2>
+                    <div class="dose-info-block">
+                        <div class="dose-info-block__row">
+                            <strong>Рост:</strong> {{ .prescriptionDrug.HeightCm }} см
+                        </div>
+                        <div class="dose-info-block__row">
+                            <strong>Вес:</strong> {{ .prescriptionDrug.WeightKg }} кг
+                        </div>
+                        <div class="dose-info-block__row dose-info-block__row--result">
+                            <strong>Рекомендуемая детская доза:</strong> {{ printf "%.1f" .prescriptionDrug.PediatricDoseMg }} мг
+                        </div>
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

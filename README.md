@@ -12,10 +12,10 @@
 В `header` приложения добавить только кнопку/иконку `Домой`, она для навигации на страницу `услуг`. Добавить поле input для фильтрации на сервере списка `услуг` по одному из полей (наименование, цена, дата события), отображаемых на странице (по умолчанию отображать все). Поле поиска должно сохраняться после запроса. Всего в приложении должно быть 3 GET запроса и две модели-коллекции. Все данные для обеих страниц нужно брать прямо из двух коллекций (массива услуг и словаря заявки), без использования БД. Никаких массивов внутри отдельной `услуги` (соблюдать атомарность и 1НФ), но можно и нужно писать большие текстовые описания. Никакого редактирования, только поиск и просмотр. Без `JavaScript`
 
 В приложении должны быть использованы стили, для каждого элемента списка подгружается свое изображение. Изображения `услуг` отображатся на всех трех страницах. Изображения хранятся в `Minio`, наименование изображение указано ключом на латинице, хранится в модели отдельным полем. Разработать стиль приложения, который будет применяться далее в последующих лабораторных по фронтенду. `CSS` вынести в отдельный файл. 
-
-* [Методические указания](/tutorials/lab1-design/README.md) по верстке и дизайну Figma [arabic Figma](/tutorials/lab1-design/arabic.md). [Видеоуроки](https://www.youtube.com/watch?v=DWicd2qo2pk) по Figma
-* [Методические указания Golang](/tutorials/lab1-go/README.md)
-* [Методические указания NestJS](/tutorials/lab1-nest/README.md)
-* [Инструкция по работе c Python](/tutorials/python/python.md)
-* [Методические указания Django](/tutorials/lab1-py/lab1_tutorial.md) / [arabic Django](/tutorials/lab1-py/arabic.md)
+https://github.com/iu5git/Web/blob/main/tutorials/lab1-design/README.md
+* [Методические указания](https://github.com/iu5git/Web/blob/main/tutorials/lab1-design/README.md) по верстке и дизайну Figma [arabic Figma](/tutorials/lab1-design/arabic.md). [Видеоуроки](https://www.youtube.com/watch?v=DWicd2qo2pk) по Figma
+* [Методические указания Golang](https://github.com/iu5git/Web/blob/main/tutorials/lab1-go/README.md)
+* [Методические указания NestJS](https://github.com/iu5git/Web/blob/main/tutorials/lab1-nest/README.md)
+* [Инструкция по работе c Python](https://github.com/iu5git/Web/blob/main/tutorials/python/python.md)
+* [Методические указания Django](https://github.com/iu5git/Web/blob/main/tutorials/lab1-py/lab1_tutorial.md) / [arabic Django](https://github.com/iu5git/Web/blob/main/tutorials/lab1-py/arabic.md)
 * [Установка и администрирование Minio](https://github.com/iu5git/Networking/tree/main/S3)

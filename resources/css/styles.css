@@ -1,0 +1,661 @@
+/*
+ * Стили скопированы с https://www.invitro.ru (референс-сайт):
+ *
+ * 1. Цветовая палитра — 3 основных цвета:
+ *    - #00a9bf (светло-синий) — header, основной тёмный текст, фон навигации
+ *    - #08c3dc (ярко-голубой) — акцентный цвет: кнопки, CTA, hover ссылок
+ *    - #FFFFFF (белый) — фон страниц, фон карточек
+ *
+ * 2. Шрифт "sans-serif" — основной шрифт invitro.ru
+ *    (с fallback на sans-serif)
+ *
+ * 3. Hover-эффекты — плавные transitions на карточках и кнопках
+ *    (скопировано из .css-13me7co / ddp-experiment блока)
+ *
+ * 4. Форма карточек — border-radius: 15px, padding: 22px,
+ *    box-shadow с rgba(0, 30, 43, 0.08)
+ *    (скопировано из product section на invitro.ru)
+ */
+
+:root {
+    /* Основные цвета из invitro.ru */
+    --color-primary-dark: #00a9bf;
+    --color-primary-accent: #08c3dc;
+    --color-white: #FFFFFF;
+
+    /* Переферийные цвета */
+    --color-primary-darker: #007a8a;
+    --color-primary-light: #b2ebf2;
+    --color-primary-lighter: #e0f7fa;
+    --color-primary-hover: #00b8d4;
+
+    /* Серые оттенки для текста */
+    --color-text-dark: #333333;
+    --color-text-medium: #666666;
+    --color-text-light: #999999;
+
+    /* Фоны и границы */
+    --color-bg-light: #f5f5f5;
+    --color-bg-lighter: #fafafa;
+    --color-border: #e0e0e0;
+    --color-border-light: #f0f0f0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    color: var(--color-text-dark);
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    background: var(--color-white);
+    overflow-x: hidden;
+}
+
+a {
+    color: var(--color-primary-dark);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--color-primary-accent);
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* ===== Header ===== */
+
+header {
+    display: flex;
+    align-items: center;
+    height: 72px;
+    width: 100%;
+    padding: 0 32px;
+    box-sizing: border-box;
+    background-color: var(--color-primary-dark);
+}
+
+.header-home {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.header-home__icon {
+    display: block;
+    height: 36px;
+    width: auto;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+.header-home__text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-white);
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+}
+
+.header-home:hover .header-home__text {
+    color: var(--color-primary-light);
+}
+
+/* ===== Toolbar (поиск + иконка заявки на расчёт доз) ===== */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px 32px;
+    background: var(--color-bg-light);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-input {
+    width: 360px;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    font-size: 14px;
+    box-sizing: border-box;
+    font-family: sans-serif;
+    color: var(--color-text-dark);
+    background: var(--color-white);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.search-input::placeholder {
+    color: var(--color-text-light);
+}
+
+.search-input:focus {
+    border-color: var(--color-primary-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(8, 195, 220, 0.2);
+}
+
+.search-btn {
+    height: 40px;
+    padding: 0 22px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: sans-serif;
+    background-color: var(--color-primary-accent);
+    color: var(--color-white);
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.search-btn:hover {
+    background-color: var(--color-primary-hover);
+    transform: translateY(-1px);
+}
+
+/* ===== Иконка заявки (препараты / расчёт доз) ===== */
+
+.prescription-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    color: var(--color-primary-dark);
+    transition: border-color 0.3s ease, color 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 30, 43, 0.08);
+}
+
+.prescription-icon:hover {
+    border-color: var(--color-primary-accent);
+    color: var(--color-primary-accent);
+    background: var(--color-primary-lighter);
+}
+
+.prescription-icon svg {
+    color: inherit;
+}
+
+.prescription-icon__badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--color-primary-accent);
+    color: var(--color-white);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+/* ===== Основной контейнер ===== */
+
+.space {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 30px 20px 60px;
+}
+
+/* ===== Сетка карточек ===== */
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+/* ===== Карточка препарата ===== */
+
+a.card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 300px;
+    font-size: 14px;
+    border-radius: 15px;
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border-light);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+    overflow: hidden;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 30, 43, 0.08);
+}
+
+a.card:hover {
+    box-shadow: 0 4px 16px rgba(0, 169, 191, 0.15);
+    transform: translateY(-2px);
+    color: inherit;
+}
+
+a.card img {
+    width: calc(100% - 24px);
+    height: 200px;
+    margin: 12px 12px 0;
+    object-fit: cover;
+    border-radius: 8px;
+    background-color: var(--color-primary-lighter);
+}
+
+.card__body {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.card__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-primary-dark);
+    margin: 0;
+}
+
+.card__coefficients {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.card__coeff-item {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 30, 43, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.card__coeff-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.85;
+}
+
+.card__coeff-value {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.card__coeff-item--latency {
+    background: rgba(8, 195, 220, 0.12);
+    border-color: rgba(8, 195, 220, 0.25);
+}
+
+.card__coeff-item--latency .card__coeff-label { color: var(--color-primary-accent); }
+.card__coeff-item--latency .card__coeff-value { color: var(--color-primary-accent); }
+
+.card__coeff-item--throughput {
+    background: var(--color-primary-lighter);
+    border-color: rgba(0, 30, 43, 0.1);
+}
+
+.card__coeff-item--throughput .card__coeff-label { color: var(--color-primary-dark); }
+.card__coeff-item--throughput .card__coeff-value { color: var(--color-primary-dark); }
+
+.card__coeff-item--reliability {
+    background: rgba(0, 30, 43, 0.06);
+    border-color: rgba(0, 30, 43, 0.12);
+}
+
+.card__coeff-item--reliability .card__coeff-label { color: var(--color-primary-darker); }
+.card__coeff-item--reliability .card__coeff-value { color: var(--color-primary-darker); }
+
+/* ===== Детальная страница препарата ===== */
+
+.detail-wrapper {
+    max-width: 960px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.detail-card {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+    background-color: var(--color-white);
+    border-radius: 15px;
+    border: 1px solid var(--color-border-light);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 30, 43, 0.08);
+}
+
+/* Вертикальное видео слева — крупнее, акцент на нём */
+.detail-card__video-wrap {
+    flex-shrink: 0;
+    width: 400px;
+    aspect-ratio: 9 / 16;
+    overflow: hidden;
+    background-color: var(--color-primary-lighter);
+    box-shadow: 0 4px 20px rgba(0, 30, 43, 0.12);
+}
+
+.detail-card__video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+/* Информация справа — узкая колонка по ширине контента */
+.detail-card__body {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 340px;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.detail-card__title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--color-primary-dark);
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* Дозировки — блоки с подписью и значением */
+.detail-card__coefficients {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+}
+
+.detail-card__coeff-item {
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-sizing: border-box;
+}
+
+.detail-card__coeff-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.9;
+}
+
+.detail-card__coeff-value {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.detail-card__coeff-item--latency {
+    background: rgba(8, 195, 220, 0.15);
+    border-color: rgba(8, 195, 220, 0.3);
+}
+
+.detail-card__coeff-item--latency .detail-card__coeff-label { color: var(--color-primary-accent); }
+.detail-card__coeff-item--latency .detail-card__coeff-value { color: var(--color-primary-accent); }
+
+.detail-card__coeff-item--throughput {
+    background: var(--color-primary-lighter);
+    border-color: rgba(0, 30, 43, 0.12);
+}
+
+.detail-card__coeff-item--throughput .detail-card__coeff-label { color: var(--color-primary-dark); }
+.detail-card__coeff-item--throughput .detail-card__coeff-value { color: var(--color-primary-dark); }
+
+.detail-card__coeff-item--reliability {
+    background: rgba(0, 30, 43, 0.06);
+    border-color: rgba(0, 30, 43, 0.15);
+}
+
+.detail-card__coeff-item--reliability .detail-card__coeff-label { color: var(--color-primary-darker); }
+.detail-card__coeff-item--reliability .detail-card__coeff-value { color: var(--color-primary-darker); }
+
+.detail-card__description {
+    font-size: 0.9rem;
+    color: var(--color-text-medium);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.detail-card__separator {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 8px 0;
+}
+
+.detail-card__section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-primary-dark);
+    margin: 0 0 4px 0;
+}
+
+/* ===== Блок параметров пациента и расчётной дозы (на странице препарата) ===== */
+
+.dose-info-block {
+    background-color: var(--color-primary-lighter);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+.dose-info-block__row {
+    font-size: 0.9rem;
+    color: var(--color-text-medium);
+    margin-bottom: 6px;
+}
+
+.dose-info-block__row:last-child {
+    margin-bottom: 0;
+}
+
+.dose-info-block__row strong {
+    color: var(--color-text-dark);
+}
+
+.dose-info-block__row--result {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+}
+
+.dose-info-block__row--result strong {
+    color: var(--color-primary-accent);
+}
+
+/* ===== Страница заявки (расчёт доз) ===== */
+
+.prescription-detail {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.prescription-detail__header-card {
+    background-color: var(--color-white);
+    border: 2px solid var(--color-primary-accent);
+    border-radius: 15px;
+    padding: 32px 48px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 8px rgba(0, 30, 43, 0.08);
+}
+
+.prescription-detail__title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-primary-dark);
+    margin-bottom: 12px;
+}
+
+.prescription-detail__description {
+    font-size: 0.95rem;
+    color: var(--color-text-medium);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ===== Таблица препаратов в заявке (дозы) ===== */
+
+.dose-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+}
+
+.dose-table thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-text-medium);
+    padding: 10px 12px;
+    background-color: var(--color-white);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+}
+
+.dose-table thead th:first-child {
+    border-left: 1px solid var(--color-border);
+    border-radius: 12px 0 0 12px;
+}
+
+.dose-table thead th:last-child {
+    border-right: 1px solid var(--color-border);
+    border-radius: 0 12px 12px 0;
+}
+
+.dose-table tbody tr {
+    background-color: var(--color-white);
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.dose-table tbody tr:hover td {
+    border-color: var(--color-primary-accent);
+    background-color: var(--color-primary-lighter);
+}
+
+.dose-table tbody td {
+    padding: 12px;
+    font-size: 15px;
+    color: var(--color-text-medium);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.dose-table tbody td:first-child {
+    border-left: 1px solid var(--color-border);
+    border-radius: 12px 0 0 12px;
+}
+
+.dose-table tbody td:last-child {
+    border-right: 1px solid var(--color-border);
+    border-radius: 0 12px 12px 0;
+}
+
+.dose-table__col-photo {
+    width: 80px;
+}
+
+.dose-table__col-photo img {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    background-color: var(--color-primary-lighter);
+}
+
+.dose-table__col-result {
+    color: var(--color-primary-accent) !important;
+    font-weight: 600;
+}
+
+/* ===== Адаптивность ===== */
+
+@media (max-width: 992px) {
+    .container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-wrapper {
+        padding: 0 10px;
+    }
+
+    .detail-card {
+        flex-direction: column;
+    }
+
+    .detail-card__video-wrap {
+        width: 100%;
+        max-width: 260px;
+        margin: 0 auto;
+    }
+
+    .detail-card__body {
+        max-width: none;
+        padding: 20px 24px;
+    }
+
+    .prescription-detail__header-card {
+        padding: 20px 24px;
+    }
+
+    header {
+        padding: 0 16px;
+    }
+
+    .toolbar {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+    }
+
+    .search-input {
+        width: 200px;
+    }
+}
