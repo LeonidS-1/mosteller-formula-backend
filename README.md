@@ -1,24 +1,50 @@
-#### Лабораторная 2
+#### Лабораторная 3
 
-- **Цель работы**: разработка структуры базы данных и её подключение к бэкенду приложения расчёта детской дозы по ППТ (препараты, рецепт `prescription`, связь м-м с ростом/весом и рассчитанной дозой).
-- **Порядок показа**: формула Mosteller и расчёт дозы; панель Adminer (или Django Admin) — добавление препарата; просмотр данных через `SELECT`; три страницы: поиск препаратов, удаление черновика рецепта, переход по URL после удаления, добавление двух препаратов в черновик рецепта, просмотр состава; в БД — логическое удаление рецепта (`status = deleted`) и новый черновик после добавления. В коде: модели GORM, составной ключ м-м, четыре сценария через ORM (список/карточка препарата, просмотр черновика, добавление строки в м-м), логическое удаление рецепта — сырой `SQL UPDATE`.
-- **Контрольные вопросы**: виды БД, SQL, курсоры, ORM, модель и миграции, чистая архитектура.
-- **ER-диаграмма**: таблицы `users`, `drugs`, `prescriptions`, `prescription_drugs`; связи; без каскадного удаления.
+- **Цель работы**: REST API бэкенда для SPA: препараты (`drugs`), рецепты (`prescriptions`), связь м-м `prescription_drugs` (рост, вес, рассчитанная доза `pediatric_dose_mg`), пользователи, загрузка изображения и короткого видео препарата в MinIO.
+- **Порядок показа**: коллекция запросов в Insomnia/Postman — `GET` списка рецептов с фильтрами `from-date`, `to-date`, `status`; `GET` корзины `/api/prescriptions/cart`; удаление черновика рецепта; `GET` списка препаратов с фильтром `Title`; `POST` препарата с файлами; добавление препаратов в черновик; просмотр рецепта; `PUT` правка полей м-м (рост/вес) и рецепта (ФИО врача, примечания); формирование рецепта (пересчёт дозы по Mosteller); попытка завершить черновик (ошибка); вход модератора; завершение/отклонение сформированного рецепта; регистрация пользователя. В БД — `SELECT` для проверки данных; в коде — модели, сериализаторы, singleton создателя (`creatorUserID` / `GetCreatorID`).
+- **Контрольные вопросы**: веб-сервис, REST, HTTP, HTTPS, версии HTTP, OSI.
+- **Диаграмма классов** бэкенда по URL, модели и таблицы — по курсу.
 
-**Задание по БД**: PostgreSQL; четыре таблицы: препараты (`drugs`, в т.ч. дозировка и коэффициенты для расчёта), рецепты (`prescriptions`, статусы включая `draft` и `deleted`, ФИО врача `doctor_full_name`, даты и модератор по методичке), м-м `prescription_drugs` (рост, вес, рассчитанная доза `pediatric_dose_mg`), пользователи (`users`).
+**Требования к API**
 
-**HTTP**: три `GET` (`/`, `/drugs/:id`, `/prescriptions/:id` для черновика) и два `POST`: добавление препарата в черновик рецепта (`/prescriptions/add`, ORM), логическое удаление рецепта (`/prescriptions/delete`, `UPDATE` без ORM).
+- Префикс всех методов: `/api`.
+- Создатель рецепта зафиксирован константой в репозитории; модератор — через `POST /api/users/login` (заглушка пароля).
+- Список рецептов не отдаёт статусы `deleted` и `draft`; фильтрация по диапазону даты формирования и статусу на бэкенде.
+- Список препаратов — фильтр по строке поиска, query-параметр `Title` (как в методичке по аналогии с первой лабораторной).
+- В списке рецептов поле `completed_dose_line_count` — число строк м-м с непустым `pediatric_dose_mg`.
+
+**Эндпоинты**
+
+| Метод | Путь |
+|--------|------|
+| GET | `/api/drugs?Title=...` |
+| GET | `/api/drugs/:id` |
+| POST | `/api/drugs` |
+| GET | `/api/prescriptions/cart` |
+| GET | `/api/prescriptions?from-date=&to-date=&status=` |
+| GET | `/api/prescriptions/:id` |
+| PUT | `/api/prescriptions/:id` |
+| PUT | `/api/prescriptions/:id/form` |
+| PUT | `/api/prescriptions/:id/finish` |
+| DELETE | `/api/prescriptions/:id` |
+| POST | `/api/prescription_drugs/add/:drug_id` |
+| DELETE | `/api/prescription_drugs/:drug_id/:prescription_id` |
+| PUT | `/api/prescription_drugs/:drug_id/:prescription_id` |
+| POST | `/api/users/register` |
+| POST | `/api/users/login` |
+| POST | `/api/users/logout` |
 
 ### Запуск
 
-1. `docker compose up -d` (PostgreSQL, Minio, Redis, Adminer на http://localhost:8081).
-2. Скопируйте `.env` при необходимости; переменные `DB_*` и `MINIO_URL` должны указывать на запущенные сервисы.
-3. `make migrate-up` — применить `migrations/init-up.sql`.
-4. `make run` или `go run ./cmd/app/` из каталога проекта (после `source .env`).
+1. `docker compose up -d` (PostgreSQL, MinIO, Redis, Adminer на http://localhost:8081).
+2. В MinIO Console создайте бакет с именем из `MINIO_BUCKET` (по умолчанию `inv-media`) или задайте переменную под существующий бакет.
+3. Переменные: `DB_*`, при необходимости `MINIO_HOST`, `MINIO_PORT`, `MINIO_USER`, `MINIO_PASS`, `MINIO_BUCKET`.
+4. `make migrate-up` — применить `migrations/init-up.sql`.
+5. `make run` или `go run ./cmd/app/` из каталога проекта (после `source .env`).
 
-Конфиг сервера и при необходимости `MINIO_URL`: `config/config.toml` и переменные окружения.
+Статические файлы: `/static`. HTML-шаблоны в репозитории не подключаются к Gin (режим JSON API).
 
 ### Ссылки
 
-- [Методические указания Golang (lab2)](https://github.com/iu5git/Networking/blob/main/tutorials/lab2-go/README.md) (пример пути; при необходимости замените на актуальный репозиторий курса).
+- [Методические указания Golang (lab3)](https://github.com/iu5git/Networking/blob/main/tutorials/lab3-go/README.md) (при необходимости замените на актуальный репозиторий курса).
 - [PostgreSQL в Docker](https://github.com/iu5git/Networking/blob/main/tutorials/lab2-db/README.md).
