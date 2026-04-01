@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS prescription_drugs;
+DROP TABLE IF EXISTS prescriptions;
+DROP TABLE IF EXISTS drugs;
+DROP TABLE IF EXISTS users;

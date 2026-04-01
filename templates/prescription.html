@@ -1,0 +1,52 @@
+<html lang="ru">
+    <head>
+        <title>Рецепт — расчёт детской дозы</title>
+        <link rel="stylesheet" href="/static/css/styles.css">
+    </head>
+    <body>
+        <header>
+            <a href="/" class="header-home">
+                <img src="/static/img/logo.svg" alt="Расчёт дозы по ППТ" class="header-home__icon">
+            </a>
+        </header>
+        <div class="prescription-detail">
+            <div class="prescription-detail__header-card">
+                <h1 class="prescription-detail__title">Рецепт на расчёт детской дозы</h1>
+                <div class="prescription-detail__info">
+                    <div class="prescription-detail__info-item"><strong>ID рецепта:</strong> {{ .prescription_id }}</div>
+                    <div class="prescription-detail__info-item"><strong>Врач:</strong> {{ .prescription.DoctorFullName }}</div>
+                    <div class="prescription-detail__info-item"><strong>Препаратов в рецепте:</strong> {{ len .items }}</div>
+                </div>
+            </div>
+            <table class="dose-table">
+                <thead>
+                    <tr>
+                        <th class="dose-table__col-photo">Изображение</th>
+                        <th>Препарат</th>
+                        <th>Рост (см)</th>
+                        <th>Вес (кг)</th>
+                        <th>Доза (мг)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .items }}
+                    <tr>
+                        <td class="dose-table__col-photo">
+                            <img src="{{ $.minioUrl }}/{{ .Drug.PhotoURL }}" alt="{{ .Drug.Title }}">
+                        </td>
+                        <td>{{ .Drug.Title }}</td>
+                        <td>{{ .HeightCm }}</td>
+                        <td>{{ .WeightKg }}</td>
+                        <td class="dose-table__col-result">{{ printf "%.1f" (num .PediatricDoseMg) }}</td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+
+            <form method="POST" action="/prescriptions/delete" class="prescription-detail__delete-form">
+                <input type="hidden" name="prescription_id" value="{{ .prescription_id }}">
+                <button type="submit" class="btn-delete">Удалить рецепт</button>
+            </form>
+        </div>
+    </body>
+</html>
