@@ -162,8 +162,8 @@ func CalculatePediatricDose(heightCm, weightKg int, dosePerM2Mg, maxDailyMg floa
 }
 
 // buildPrescription собирает заявку из записей м-м.
-// descriptionFormat — строка формата с одним %d для подстановки количества пациентов (например "для %d пациентов").
-func (r *Repository) buildPrescription(id int, title, descriptionFormat string, entries []struct {
+// doctorName — ФИО врача для отображения в описании («Рецепт врача …»).
+func (r *Repository) buildPrescription(id int, title, doctorName string, entries []struct {
 	DrugID   int
 	HeightCm int
 	WeightKg int
@@ -194,7 +194,7 @@ func (r *Repository) buildPrescription(id int, title, descriptionFormat string, 
 		})
 	}
 
-	description := fmt.Sprintf(descriptionFormat, len(prescriptionDrugs))
+	description := fmt.Sprintf("Рецепт врача %s", doctorName)
 
 	return Prescription{
 		ID:          id,
@@ -222,8 +222,8 @@ func (r *Repository) GetPrescriptions() ([]Prescription, error) {
 
 	prescription, err := r.buildPrescription(
 		1,
-		"Расчёт детских доз для стационарных пациентов",
-		"Заявка на расчёт индивидуальных педиатрических доз по площади поверхности тела (формула Mosteller) для %d пациентов с разными антропометрическими данными. Рост и вес указаны в см и кг соответственно.",
+		"Заявка",
+		"Смирнова Анна Владимировна",
 		entries,
 	)
 	if err != nil {
