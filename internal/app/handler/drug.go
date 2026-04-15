@@ -14,6 +14,15 @@ import (
 	"web_backend/internal/app/serializer"
 )
 
+// GetDrugs godoc
+// @Summary Получить список препаратов
+// @Description Возвращает список препаратов, доступных для назначения, с фильтром по названию.
+// @Tags drugs
+// @Produce json
+// @Param Title query string false "Название препарата для поиска"
+// @Success 200 {array} serializer.DrugJSON "Список препаратов"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /drugs [get]
 func (h *Handler) GetDrugs(ctx *gin.Context) {
 	var drugs []ds.Drug
 	var err error
@@ -34,6 +43,17 @@ func (h *Handler) GetDrugs(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// GetDrug godoc
+// @Summary Получить препарат по ID
+// @Description Возвращает карточку препарата по идентификатору.
+// @Tags drugs
+// @Produce json
+// @Param id path int true "ID препарата"
+// @Success 200 {object} serializer.DrugJSON "Данные препарата"
+// @Failure 400 {object} map[string]string "Неверный ID"
+// @Failure 404 {object} map[string]string "Препарат не найден"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /drugs/{id} [get]
 func (h *Handler) GetDrug(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -53,6 +73,18 @@ func (h *Handler) GetDrug(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, serializer.DrugToJSON(*drug))
 }
 
+// CreateDrug godoc
+// @Summary Создать препарат
+// @Description Создает новый препарат, при необходимости загружает изображение и видео в MinIO.
+// @Tags drugs
+// @Accept json
+// @Produce json
+// @Param drug body serializer.DrugJSON true "Данные препарата"
+// @Success 201 {object} serializer.DrugJSON "Созданный препарат"
+// @Failure 400 {object} map[string]string "Неверный запрос"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Security ApiKeyAuth
+// @Router /drugs [post]
 func (h *Handler) CreateDrug(ctx *gin.Context) {
 	contentType := ctx.GetHeader("Content-Type")
 	var j serializer.DrugJSON

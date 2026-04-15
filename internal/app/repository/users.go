@@ -3,7 +3,10 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"os"
+	"time"
 
+	"github.com/golang-jwt/jwt"
 	"gorm.io/gorm"
 
 	"web_backend/internal/app/ds"
@@ -37,8 +40,8 @@ func (r *Repository) GetUserByLogin(login string) (ds.Users, error) {
 	return user, nil
 }
 
-func (r *Repository) CreateUser(j serializer.UserJSON) (ds.Users, error) {
-	user := serializer.UserFromJSON(j)
+func (r *Repository) CreateUser(j serializer.SignUpRequest) (ds.Users, error) {
+	user := serializer.SignUpRequestToUser(j)
 	if user.Login == "" {
 		return ds.Users{}, errors.New("логин обязателен для заполнения")
 	}
@@ -58,23 +61,47 @@ func (r *Repository) CreateUser(j serializer.UserJSON) (ds.Users, error) {
 	return user, nil
 }
 
-func (r *Repository) SignIn(j serializer.UserJSON) (ds.Users, error) {
+func (r *Repository) SignIn(j serializer.SignInRequest) (string, error) {
 	if j.Login == "" {
-		return ds.Users{}, errors.New("логин обязателен для заполнения")
+		return "", errors.New("логин обязателен для заполнения")
 	}
 	if j.Password == "" {
-		return ds.Users{}, errors.New("пароль обязателен для заполнения")
+		return "", errors.New("пароль обязателен для заполнения")
 	}
 	user, err := r.GetUserByLogin(j.Login)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			return ds.Users{}, errors.New("неверный логин или пароль")
+			return "", errors.New("неверный логин или пароль")
 		}
-		return ds.Users{}, err
+		return "", err
 	}
 	if user.Password != j.Password {
-		return ds.Users{}, errors.New("неверный логин или пароль")
+		return "", errors.New("неверный логин или пароль")
 	}
-	r.SetUserID(int(user.UserID))
-	return user, nil
+
+	token, err := GenerateToken(user.UserID, user.IsModerator)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func GenerateToken(userID uint, isModerator bool) (string, error) {
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["authorized"] = true
+	claims["user_id"] = fmt.Sprintf("%d", userID)
+	claims["is_moderator"] = isModerator
+	claims["exp"] = time.Now().Add(time.Hour).Unix()
+
+	jwtKey := os.Getenv("JWT_KEY")
+	if jwtKey == "" {
+		jwtKey = "default-secret-key-change-in-production"
+	}
+
+	tokenString, err := token.SignedString([]byte(jwtKey))
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
 }

@@ -1,0 +1,790 @@
+basePath: /api
+definitions:
+  serializer.DrugJSON:
+    properties:
+      adult_dose_mg:
+        type: number
+      description:
+        type: string
+      dose_per_m2_mg:
+        type: number
+      drug_id:
+        type: integer
+      is_deleted:
+        type: boolean
+      max_daily_mg:
+        type: number
+      photo_url:
+        type: string
+      title:
+        type: string
+      video:
+        type: string
+    type: object
+  serializer.PrescriptionDrugJSON:
+    properties:
+      dose:
+        type: number
+      drug_id:
+        type: integer
+      height_cm:
+        type: integer
+      prescription_id:
+        type: integer
+      weight_kg:
+        type: integer
+    type: object
+  serializer.PrescriptionEditJSON:
+    properties:
+      doctor_full_name:
+        type: string
+      notes:
+        type: string
+    type: object
+  serializer.PrescriptionJSON:
+    properties:
+      completed_dose_line_count:
+        type: integer
+      created_at:
+        type: string
+      creator_login:
+        type: string
+      doctor_full_name:
+        type: string
+      finish_date:
+        type: string
+      forming_date:
+        type: string
+      moderator_login:
+        type: string
+      notes:
+        type: string
+      prescription_id:
+        type: integer
+      status:
+        type: string
+    type: object
+  serializer.SignInRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  serializer.SignUpRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  serializer.SignUpResponse:
+    properties:
+      is_moderator:
+        type: boolean
+      login:
+        type: string
+    type: object
+  serializer.StatusJSON:
+    properties:
+      status:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: http://localhost:8080
+  description: API для управления рецептами, препаратами и расчетом доз.
+  license:
+    name: MIT
+  title: Prescription API
+  version: "1.0"
+paths:
+  /drugs:
+    get:
+      description: Возвращает список препаратов, доступных для назначения, с фильтром
+        по названию.
+      parameters:
+      - description: Название препарата для поиска
+        in: query
+        name: Title
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список препаратов
+          schema:
+            items:
+              $ref: '#/definitions/serializer.DrugJSON'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить список препаратов
+      tags:
+      - drugs
+    post:
+      consumes:
+      - application/json
+      description: Создает новый препарат, при необходимости загружает изображение
+        и видео в MinIO.
+      parameters:
+      - description: Данные препарата
+        in: body
+        name: drug
+        required: true
+        schema:
+          $ref: '#/definitions/serializer.DrugJSON'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданный препарат
+          schema:
+            $ref: '#/definitions/serializer.DrugJSON'
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Создать препарат
+      tags:
+      - drugs
+  /drugs/{id}:
+    get:
+      description: Возвращает карточку препарата по идентификатору.
+      parameters:
+      - description: ID препарата
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Данные препарата
+          schema:
+            $ref: '#/definitions/serializer.DrugJSON'
+        "400":
+          description: Неверный ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Препарат не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить препарат по ID
+      tags:
+      - drugs
+  /prescription_drugs/{drug_id}/{prescription_id}:
+    delete:
+      description: Удаляет препарат из черновика рецепта пользователя.
+      parameters:
+      - description: ID препарата
+        in: path
+        name: drug_id
+        required: true
+        type: integer
+      - description: ID рецепта
+        in: path
+        name: prescription_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленный рецепт
+          schema:
+            $ref: '#/definitions/serializer.PrescriptionJSON'
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Доступ запрещен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Не найдено
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить препарат из рецепта
+      tags:
+      - prescription_drugs
+    put:
+      consumes:
+      - application/json
+      description: Изменяет рост/вес в строке назначения и пересчитывает дозу.
+      parameters:
+      - description: ID препарата
+        in: path
+        name: drug_id
+        required: true
+        type: integer
+      - description: ID рецепта
+        in: path
+        name: prescription_id
+        required: true
+        type: integer
+      - description: Новые параметры
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/serializer.PrescriptionDrugJSON'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленные данные строки назначения
+          schema:
+            $ref: '#/definitions/serializer.PrescriptionDrugJSON'
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Доступ запрещен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Не найдено
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Изменить параметры препарата в рецепте
+      tags:
+      - prescription_drugs
+  /prescription_drugs/add/{drug_id}:
+    post:
+      description: Добавляет препарат в черновик рецепта пользователя.
+      parameters:
+      - description: ID препарата
+        in: path
+        name: drug_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленный рецепт
+          schema:
+            $ref: '#/definitions/serializer.PrescriptionJSON'
+        "201":
+          description: Создан новый черновик рецепта
+          schema:
+            $ref: '#/definitions/serializer.PrescriptionJSON'
+        "400":
+          description: Неверный ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Препарат не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Препарат уже в рецепте
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Добавить препарат в рецепт
+      tags:
+      - prescription_drugs
+  /prescriptions:
+    get:
+      description: Возвращает список рецептов с фильтрацией по дате и статусу.
+      parameters:
+      - description: Начальная дата (YYYY-MM-DD)
+        in: query
+        name: from-date
+        type: string
+      - description: Конечная дата (YYYY-MM-DD)
+        in: query
+        name: to-date
+        type: string
+      - description: Статус рецепта
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список рецептов
+          schema:
+            items:
+              $ref: '#/definitions/serializer.PrescriptionJSON'
+            type: array
+        "400":
+          description: Неверный формат даты
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Не авторизован
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Получить список рецептов
+      tags:
+      - prescriptions
+  /prescriptions/{id}:
+    delete:
+      description: Выполняет логическое удаление черновика рецепта.
+      parameters:
+      - description: ID рецепта
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Рецепт удалён
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Доступ запрещен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Рецепт не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить рецепт
+      tags:
+      - prescriptions
+    get:
+      description: Возвращает рецепт и список назначенных препаратов.
+      parameters:
+      - description: ID рецепта
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Рецепт и препараты
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Доступ запрещен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Рецепт не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Получить рецепт по ID
+      tags:
+      - prescriptions
+    put:
+      consumes:
+      - application/json
+      description: 'Обновляет поля черновика рецепта: ФИО врача и примечания.'
+      parameters:
+      - description: ID рецепта
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новые данные рецепта
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/serializer.PrescriptionEditJSON'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленный рецепт
+          schema:
+            $ref: '#/definitions/serializer.PrescriptionJSON'
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Доступ запрещен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Рецепт не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Изменить рецепт
+      tags:
+      - prescriptions
+  /prescriptions/{id}/finish:
+    put:
+      consumes:
+      - application/json
+      description: Меняет статус сформированного рецепта на completed или rejected
+        (только модератор).
+      parameters:
+      - description: ID рецепта
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новый статус
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/serializer.StatusJSON'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленный рецепт
+          schema:
+            $ref: '#/definitions/serializer.PrescriptionJSON'
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Доступ запрещен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Рецепт не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Завершить или отклонить рецепт
+      tags:
+      - prescriptions
+  /prescriptions/{id}/form:
+    put:
+      description: Переводит рецепт из черновика в статус formed и пересчитывает дозы.
+      parameters:
+      - description: ID рецепта
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сформированный рецепт
+          schema:
+            $ref: '#/definitions/serializer.PrescriptionJSON'
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Доступ запрещен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Рецепт не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Сформировать рецепт
+      tags:
+      - prescriptions
+  /prescriptions/cart:
+    get:
+      description: Возвращает информацию о текущем черновике рецепта пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Данные корзины
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить корзину рецепта
+      tags:
+      - prescriptions
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет аутентификацию и возвращает JWT токен.
+      parameters:
+      - description: Логин и пароль
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/serializer.SignInRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Токен доступа
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Неверный логин или пароль
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Вход пользователя
+      tags:
+      - users
+  /users/logout:
+    post:
+      description: Добавляет текущий JWT токен в blacklist Redis.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Токен добавлен в blacklist
+        "401":
+          description: Токен не предоставлен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Выход пользователя
+      tags:
+      - users
+  /users/register:
+    post:
+      consumes:
+      - application/json
+      description: Регистрирует нового пользователя системы рецептов.
+      parameters:
+      - description: Логин и пароль
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/serializer.SignUpRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь создан
+          schema:
+            $ref: '#/definitions/serializer.SignUpResponse'
+        "400":
+          description: Ошибка валидации
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Пользователь уже существует
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Регистрация пользователя
+      tags:
+      - users
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

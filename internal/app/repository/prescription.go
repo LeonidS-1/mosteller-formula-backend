@@ -121,7 +121,7 @@ func (r *Repository) GetCompletedDoseLineCount(prescriptionID uint) (int, error)
 	return int(count), err
 }
 
-func (r *Repository) GetAllPrescriptions(from, to time.Time, status string) ([]ds.Prescription, error) {
+func (r *Repository) GetAllPrescriptions(from, to time.Time, status string, creatorID uint) ([]ds.Prescription, error) {
 	var list []ds.Prescription
 	sub := r.db.Where("status != ? AND status != ?", "deleted", "draft")
 	if !from.IsZero() {
@@ -132,6 +132,9 @@ func (r *Repository) GetAllPrescriptions(from, to time.Time, status string) ([]d
 	}
 	if status != "" {
 		sub = sub.Where("status = ?", status)
+	}
+	if creatorID != 0 {
+		sub = sub.Where("creator_id = ?", creatorID)
 	}
 	err := sub.Order("prescription_id").Find(&list).Error
 	return list, err
@@ -210,7 +213,7 @@ func (r *Repository) AddDrugToPrescription(drugID uint, creatorID uint) error {
 	return r.db.Create(&row).Error
 }
 
-func (r *Repository) DeleteDrugFromPrescription(prescriptionID, drugID int) (ds.Prescription, error) {
+func (r *Repository) DeleteDrugFromPrescription(prescriptionID, drugID int, creatorID uint) (ds.Prescription, error) {
 	var rx ds.Prescription
 	err := r.db.Where("prescription_id = ?", prescriptionID).First(&rx).Error
 	if err != nil {
@@ -222,6 +225,9 @@ func (r *Repository) DeleteDrugFromPrescription(prescriptionID, drugID int) (ds.
 	if rx.Status != "draft" {
 		return ds.Prescription{}, fmt.Errorf("%w: можно удалять только из черновика", ErrNotAllowed)
 	}
+	if rx.CreatorID != creatorID {
+		return ds.Prescription{}, fmt.Errorf("%w: можно удалять только в своем черновике", ErrNotAllowed)
+	}
 	err = r.db.Where("prescription_id = ? AND drug_id = ?", prescriptionID, drugID).
 		Delete(&ds.PrescriptionDrug{}).Error
 	if err != nil {
@@ -230,7 +236,7 @@ func (r *Repository) DeleteDrugFromPrescription(prescriptionID, drugID int) (ds.
 	return rx, nil
 }
 
-func (r *Repository) EditDrugInPrescription(prescriptionID, drugID int, j serializer.PrescriptionDrugJSON) (ds.PrescriptionDrug, error) {
+func (r *Repository) EditDrugInPrescription(prescriptionID, drugID int, creatorID uint, j serializer.PrescriptionDrugJSON) (ds.PrescriptionDrug, error) {
 	var item ds.PrescriptionDrug
 	err := r.db.Where("prescription_id = ? AND drug_id = ?", prescriptionID, drugID).
 		First(&item).Error
@@ -247,6 +253,9 @@ func (r *Repository) EditDrugInPrescription(prescriptionID, drugID int, j serial
 	}
 	if rx.Status != "draft" {
 		return ds.PrescriptionDrug{}, fmt.Errorf("%w: можно редактировать только черновик", ErrNotAllowed)
+	}
+	if rx.CreatorID != creatorID {
+		return ds.PrescriptionDrug{}, fmt.Errorf("%w: можно редактировать только свой черновик", ErrNotAllowed)
 	}
 
 	height := j.HeightCm
@@ -277,7 +286,7 @@ func (r *Repository) EditDrugInPrescription(prescriptionID, drugID int, j serial
 	return item, nil
 }
 
-func (r *Repository) EditPrescription(id int, j serializer.PrescriptionEditJSON) (ds.Prescription, error) {
+func (r *Repository) EditPrescription(id int, creatorID uint, j serializer.PrescriptionEditJSON) (ds.Prescription, error) {
 	var rx ds.Prescription
 	err := r.db.Where("prescription_id = ? AND status != ?", id, "deleted").First(&rx).Error
 	if err != nil {
@@ -288,6 +297,9 @@ func (r *Repository) EditPrescription(id int, j serializer.PrescriptionEditJSON)
 	}
 	if rx.Status != "draft" {
 		return ds.Prescription{}, fmt.Errorf("%w: можно редактировать только черновик", ErrNotAllowed)
+	}
+	if rx.CreatorID != creatorID {
+		return ds.Prescription{}, fmt.Errorf("%w: можно редактировать только свой черновик", ErrNotAllowed)
 	}
 	updates := map[string]interface{}{}
 	if j.DoctorFullName != nil && *j.DoctorFullName != "" {
@@ -307,7 +319,7 @@ func (r *Repository) EditPrescription(id int, j serializer.PrescriptionEditJSON)
 	return rx, nil
 }
 
-func (r *Repository) FormPrescription(id int) (ds.Prescription, error) {
+func (r *Repository) FormPrescription(id int, creatorID uint) (ds.Prescription, error) {
 	rx, err := r.GetSinglePrescription(id)
 	if err != nil {
 		return ds.Prescription{}, err
@@ -315,7 +327,7 @@ func (r *Repository) FormPrescription(id int) (ds.Prescription, error) {
 	if rx.Status != "draft" {
 		return ds.Prescription{}, fmt.Errorf("%w: только черновик можно сформировать", ErrNotAllowed)
 	}
-	if rx.CreatorID != uint(r.GetCreatorID()) {
+	if rx.CreatorID != creatorID {
 		return ds.Prescription{}, fmt.Errorf("%w: вы не создатель этого рецепта", ErrNotAllowed)
 	}
 
@@ -354,16 +366,9 @@ func (r *Repository) FormPrescription(id int) (ds.Prescription, error) {
 	return rx, nil
 }
 
-func (r *Repository) FinishPrescription(id int, status string) (ds.Prescription, error) {
+func (r *Repository) FinishPrescription(id int, status string, moderatorID uint) (ds.Prescription, error) {
 	if status != "completed" && status != "rejected" {
 		return ds.Prescription{}, errors.New("неверный статус: допустимы completed или rejected")
-	}
-	user, err := r.GetUserByID(r.GetUserID())
-	if err != nil {
-		return ds.Prescription{}, err
-	}
-	if !user.IsModerator {
-		return ds.Prescription{}, fmt.Errorf("%w: вы не модератор", ErrNotAllowed)
 	}
 	rx, err := r.GetSinglePrescription(id)
 	if err != nil {
@@ -376,19 +381,18 @@ func (r *Repository) FinishPrescription(id int, status string) (ds.Prescription,
 	err = r.db.Model(&rx).Updates(map[string]interface{}{
 		"status":       status,
 		"finish_date":  finishDate,
-		"moderator_id": user.UserID,
+		"moderator_id": moderatorID,
 	}).Error
 	if err != nil {
 		return ds.Prescription{}, err
 	}
 	rx.Status = status
 	rx.FinishDate = sql.NullTime{Time: finishDate, Valid: true}
-	uid := user.UserID
-	rx.ModeratorID = &uid
+	rx.ModeratorID = &moderatorID
 	return rx, nil
 }
 
-func (r *Repository) DeletePrescription(prescriptionID int) (ds.Prescription, error) {
+func (r *Repository) DeletePrescription(prescriptionID int, creatorID uint) (ds.Prescription, error) {
 	rx, err := r.GetSinglePrescription(prescriptionID)
 	if err != nil {
 		return ds.Prescription{}, err
@@ -396,7 +400,7 @@ func (r *Repository) DeletePrescription(prescriptionID int) (ds.Prescription, er
 	if rx.Status != "draft" {
 		return ds.Prescription{}, fmt.Errorf("%w: удалить можно только черновик", ErrNotAllowed)
 	}
-	if rx.CreatorID != uint(r.GetCreatorID()) {
+	if rx.CreatorID != creatorID {
 		return ds.Prescription{}, fmt.Errorf("%w: вы не создатель этого рецепта", ErrNotAllowed)
 	}
 	formingDate := time.Now()

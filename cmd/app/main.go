@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "web_backend/docs"
 	"web_backend/internal/app/config"
 	"web_backend/internal/app/dsn"
 	"web_backend/internal/app/handler"

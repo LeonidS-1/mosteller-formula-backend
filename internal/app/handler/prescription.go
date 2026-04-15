@@ -12,20 +12,37 @@ import (
 	"web_backend/internal/app/serializer"
 )
 
+// GetPrescriptionCart godoc
+// @Summary Получить корзину рецепта
+// @Description Возвращает информацию о текущем черновике рецепта пользователя.
+// @Tags prescriptions
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Данные корзины"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /prescriptions/cart [get]
 func (h *Handler) GetPrescriptionCart(ctx *gin.Context) {
-	creatorID := uint(h.Repository.GetCreatorID())
+	creatorID, err := getUserID(ctx)
+	if err != nil || creatorID == 0 {
+		ctx.JSON(http.StatusOK, gin.H{
+			"has_draft":   false,
+			"drugs_count": 0,
+		})
+		return
+	}
+
 	count := h.Repository.GetPrescriptionDrugCount(creatorID)
 	if count == 0 {
 		rx, err := h.Repository.CheckCurrentDraft(creatorID)
 		if err != nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"status":      "no_draft",
+				"has_draft":   false,
 				"drugs_count": 0,
 			})
 			return
 		}
 		ctx.JSON(http.StatusOK, gin.H{
 			"id":          rx.PrescriptionID,
+			"has_draft":   true,
 			"drugs_count": 0,
 		})
 		return
@@ -33,10 +50,25 @@ func (h *Handler) GetPrescriptionCart(ctx *gin.Context) {
 	prescriptionID := h.Repository.GetActivePrescriptionID(creatorID)
 	ctx.JSON(http.StatusOK, gin.H{
 		"id":          prescriptionID,
+		"has_draft":   true,
 		"drugs_count": count,
 	})
 }
 
+// GetAllPrescriptions godoc
+// @Summary Получить список рецептов
+// @Description Возвращает список рецептов с фильтрацией по дате и статусу.
+// @Tags prescriptions
+// @Produce json
+// @Param from-date query string false "Начальная дата (YYYY-MM-DD)"
+// @Param to-date query string false "Конечная дата (YYYY-MM-DD)"
+// @Param status query string false "Статус рецепта"
+// @Success 200 {array} serializer.PrescriptionJSON "Список рецептов"
+// @Failure 400 {object} map[string]string "Неверный формат даты"
+// @Failure 401 {object} map[string]string "Не авторизован"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Security ApiKeyAuth
+// @Router /prescriptions [get]
 func (h *Handler) GetAllPrescriptions(ctx *gin.Context) {
 	fromDate := ctx.Query("from-date")
 	var from, to time.Time
@@ -58,7 +90,18 @@ func (h *Handler) GetAllPrescriptions(ctx *gin.Context) {
 		to = t
 	}
 	status := ctx.Query("status")
-	list, err := h.Repository.GetAllPrescriptions(from, to, status)
+
+	userID, _ := getUserID(ctx)
+	creatorID := uint(0)
+	if isModVal, ok := ctx.Get("is_moderator"); ok {
+		if isMod, _ := isModVal.(bool); !isMod {
+			creatorID = userID
+		}
+	} else {
+		creatorID = userID
+	}
+
+	list, err := h.Repository.GetAllPrescriptions(from, to, status, creatorID)
 	if err != nil {
 		h.errorHandler(ctx, http.StatusInternalServerError, err)
 		return
@@ -72,6 +115,19 @@ func (h *Handler) GetAllPrescriptions(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// GetPrescription godoc
+// @Summary Получить рецепт по ID
+// @Description Возвращает рецепт и список назначенных препаратов.
+// @Tags prescriptions
+// @Produce json
+// @Param id path int true "ID рецепта"
+// @Success 200 {object} map[string]interface{} "Рецепт и препараты"
+// @Failure 400 {object} map[string]string "Неверный ID"
+// @Failure 403 {object} map[string]string "Доступ запрещен"
+// @Failure 404 {object} map[string]string "Рецепт не найден"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Security ApiKeyAuth
+// @Router /prescriptions/{id} [get]
 func (h *Handler) GetPrescription(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -90,6 +146,18 @@ func (h *Handler) GetPrescription(ctx *gin.Context) {
 		}
 		return
 	}
+
+	userID, _ := getUserID(ctx)
+	if isModVal, ok := ctx.Get("is_moderator"); ok {
+		if isMod, _ := isModVal.(bool); !isMod && rx.CreatorID != userID {
+			h.errorHandler(ctx, http.StatusForbidden, repository.ErrNotAllowed)
+			return
+		}
+	} else if rx.CreatorID != userID {
+		h.errorHandler(ctx, http.StatusForbidden, repository.ErrNotAllowed)
+		return
+	}
+
 	items, err := h.Repository.GetPrescriptionItems(id)
 	if err != nil {
 		h.errorHandler(ctx, http.StatusInternalServerError, err)
@@ -107,6 +175,21 @@ func (h *Handler) GetPrescription(ctx *gin.Context) {
 	})
 }
 
+// EditPrescription godoc
+// @Summary Изменить рецепт
+// @Description Обновляет поля черновика рецепта: ФИО врача и примечания.
+// @Tags prescriptions
+// @Accept json
+// @Produce json
+// @Param id path int true "ID рецепта"
+// @Param body body serializer.PrescriptionEditJSON true "Новые данные рецепта"
+// @Success 200 {object} serializer.PrescriptionJSON "Обновленный рецепт"
+// @Failure 400 {object} map[string]string "Неверный запрос"
+// @Failure 403 {object} map[string]string "Доступ запрещен"
+// @Failure 404 {object} map[string]string "Рецепт не найден"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Security ApiKeyAuth
+// @Router /prescriptions/{id} [put]
 func (h *Handler) EditPrescription(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -119,7 +202,13 @@ func (h *Handler) EditPrescription(ctx *gin.Context) {
 		h.errorHandler(ctx, http.StatusBadRequest, err)
 		return
 	}
-	rx, err := h.Repository.EditPrescription(id, j)
+	creatorID, err := getUserID(ctx)
+	if err != nil {
+		h.errorHandler(ctx, http.StatusUnauthorized, err)
+		return
+	}
+
+	rx, err := h.Repository.EditPrescription(id, creatorID, j)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			h.errorHandler(ctx, http.StatusNotFound, err)
@@ -135,6 +224,19 @@ func (h *Handler) EditPrescription(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, serializer.PrescriptionToJSON(rx, creatorLogin, moderatorLogin, completedCount))
 }
 
+// FormPrescription godoc
+// @Summary Сформировать рецепт
+// @Description Переводит рецепт из черновика в статус formed и пересчитывает дозы.
+// @Tags prescriptions
+// @Produce json
+// @Param id path int true "ID рецепта"
+// @Success 200 {object} serializer.PrescriptionJSON "Сформированный рецепт"
+// @Failure 400 {object} map[string]string "Неверный запрос"
+// @Failure 403 {object} map[string]string "Доступ запрещен"
+// @Failure 404 {object} map[string]string "Рецепт не найден"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Security ApiKeyAuth
+// @Router /prescriptions/{id}/form [put]
 func (h *Handler) FormPrescription(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -142,7 +244,13 @@ func (h *Handler) FormPrescription(ctx *gin.Context) {
 		h.errorHandler(ctx, http.StatusBadRequest, err)
 		return
 	}
-	rx, err := h.Repository.FormPrescription(id)
+	creatorID, err := getUserID(ctx)
+	if err != nil {
+		h.errorHandler(ctx, http.StatusUnauthorized, err)
+		return
+	}
+
+	rx, err := h.Repository.FormPrescription(id, creatorID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			h.errorHandler(ctx, http.StatusNotFound, err)
@@ -158,6 +266,21 @@ func (h *Handler) FormPrescription(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, serializer.PrescriptionToJSON(rx, creatorLogin, moderatorLogin, completedCount))
 }
 
+// FinishPrescription godoc
+// @Summary Завершить или отклонить рецепт
+// @Description Меняет статус сформированного рецепта на completed или rejected (только модератор).
+// @Tags prescriptions
+// @Accept json
+// @Produce json
+// @Param id path int true "ID рецепта"
+// @Param status body serializer.StatusJSON true "Новый статус"
+// @Success 200 {object} serializer.PrescriptionJSON "Обновленный рецепт"
+// @Failure 400 {object} map[string]string "Неверный запрос"
+// @Failure 403 {object} map[string]string "Доступ запрещен"
+// @Failure 404 {object} map[string]string "Рецепт не найден"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Security ApiKeyAuth
+// @Router /prescriptions/{id}/finish [put]
 func (h *Handler) FinishPrescription(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -170,7 +293,13 @@ func (h *Handler) FinishPrescription(ctx *gin.Context) {
 		h.errorHandler(ctx, http.StatusBadRequest, err)
 		return
 	}
-	rx, err := h.Repository.FinishPrescription(id, statusJSON.Status)
+	moderatorID, err := getUserID(ctx)
+	if err != nil {
+		h.errorHandler(ctx, http.StatusUnauthorized, err)
+		return
+	}
+
+	rx, err := h.Repository.FinishPrescription(id, statusJSON.Status, moderatorID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			h.errorHandler(ctx, http.StatusNotFound, err)
@@ -186,6 +315,19 @@ func (h *Handler) FinishPrescription(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, serializer.PrescriptionToJSON(rx, creatorLogin, moderatorLogin, completedCount))
 }
 
+// DeletePrescription godoc
+// @Summary Удалить рецепт
+// @Description Выполняет логическое удаление черновика рецепта.
+// @Tags prescriptions
+// @Produce json
+// @Param id path int true "ID рецепта"
+// @Success 200 {object} map[string]string "Рецепт удалён"
+// @Failure 400 {object} map[string]string "Неверный запрос"
+// @Failure 403 {object} map[string]string "Доступ запрещен"
+// @Failure 404 {object} map[string]string "Рецепт не найден"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Security ApiKeyAuth
+// @Router /prescriptions/{id} [delete]
 func (h *Handler) DeletePrescription(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -193,7 +335,13 @@ func (h *Handler) DeletePrescription(ctx *gin.Context) {
 		h.errorHandler(ctx, http.StatusBadRequest, err)
 		return
 	}
-	_, err = h.Repository.DeletePrescription(id)
+	creatorID, err := getUserID(ctx)
+	if err != nil {
+		h.errorHandler(ctx, http.StatusUnauthorized, err)
+		return
+	}
+
+	_, err = h.Repository.DeletePrescription(id, creatorID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			h.errorHandler(ctx, http.StatusNotFound, err)
