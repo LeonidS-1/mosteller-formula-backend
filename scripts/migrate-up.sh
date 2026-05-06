@@ -7,4 +7,8 @@ echo "→ Миграция UP (init-up.sql)..."
 
 PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f migrations/init-up.sql
 
+echo "→ Миграция UP (drop-prescription-notes-up.sql)..."
+
+PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f migrations/drop-prescription-notes-up.sql
+
 echo "→ Миграция UP выполнена."

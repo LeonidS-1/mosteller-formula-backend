@@ -114,8 +114,20 @@ func (r *Repository) GetModeratorAndCreatorLogin(p ds.Prescription) (string, str
 }
 
 func (r *Repository) GetCompletedDoseLineCount(prescriptionID uint) (int, error) {
+	var status string
+	err := r.db.Model(&ds.Prescription{}).
+		Where("prescription_id = ?", prescriptionID).
+		Select("status").
+		Take(&status).Error
+	if err != nil {
+		return 0, err
+	}
+	if status == "draft" || status == "formed" {
+		return 0, nil
+	}
+
 	var count int64
-	err := r.db.Model(&ds.PrescriptionDrug{}).
+	err = r.db.Model(&ds.PrescriptionDrug{}).
 		Where("prescription_id = ? AND pediatric_dose_mg IS NOT NULL", prescriptionID).
 		Count(&count).Error
 	return int(count), err
@@ -304,9 +316,6 @@ func (r *Repository) EditPrescription(id int, creatorID uint, j serializer.Presc
 	updates := map[string]interface{}{}
 	if j.DoctorFullName != nil && *j.DoctorFullName != "" {
 		updates["doctor_full_name"] = *j.DoctorFullName
-	}
-	if j.Notes != nil {
-		updates["notes"] = j.Notes
 	}
 	if len(updates) == 0 {
 		r.db.Where("prescription_id = ?", id).First(&rx)

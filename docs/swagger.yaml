@@ -38,8 +38,6 @@ definitions:
     properties:
       doctor_full_name:
         type: string
-      notes:
-        type: string
     type: object
   serializer.PrescriptionJSON:
     properties:
@@ -56,8 +54,6 @@ definitions:
       forming_date:
         type: string
       moderator_login:
-        type: string
-      notes:
         type: string
       prescription_id:
         type: integer
@@ -507,7 +503,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: 'Обновляет поля черновика рецепта: ФИО врача и примечания.'
+      description: Обновляет поле ФИО врача в черновике рецепта.
       parameters:
       - description: ID рецепта
         in: path

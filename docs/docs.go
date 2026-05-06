@@ -594,7 +594,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Обновляет поля черновика рецепта: ФИО врача и примечания.",
+                "description": "Обновляет поле ФИО врача в черновике рецепта.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1116,9 +1116,6 @@ const docTemplate = `{
             "properties": {
                 "doctor_full_name": {
                     "type": "string"
-                },
-                "notes": {
-                    "type": "string"
                 }
             }
         },
@@ -1144,9 +1141,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "moderator_login": {
-                    "type": "string"
-                },
-                "notes": {
                     "type": "string"
                 },
                 "prescription_id": {

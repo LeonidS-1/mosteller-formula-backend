@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS prescriptions
+DROP COLUMN IF EXISTS notes;

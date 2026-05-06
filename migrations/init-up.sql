@@ -25,8 +25,7 @@ CREATE TABLE IF NOT EXISTS prescriptions (
     forming_date TIMESTAMP,
     finish_date TIMESTAMP,
     moderator_id INTEGER REFERENCES users(user_id),
-    doctor_full_name VARCHAR(200) NOT NULL,
-    notes VARCHAR(2000)
+    doctor_full_name VARCHAR(200) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS prescription_drugs (

@@ -7,6 +7,11 @@ type SignInRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type SignInResponse struct {
+	Token string `json:"token"`
+	Role  string `json:"role"`
+}
+
 type SignUpRequest struct {
 	Login    string `json:"login" binding:"required"`
 	Password string `json:"password" binding:"required"`
@@ -22,6 +27,20 @@ func SignUpResponseFromUser(user ds.Users) SignUpResponse {
 		Login:       user.Login,
 		IsModerator: user.IsModerator,
 	}
+}
+
+func SignInResponseFromUser(token string, user ds.Users) SignInResponse {
+	return SignInResponse{
+		Token: token,
+		Role:  roleFromModeratorFlag(user.IsModerator),
+	}
+}
+
+func roleFromModeratorFlag(isModerator bool) string {
+	if isModerator {
+		return "moderator"
+	}
+	return "user"
 }
 
 func SignUpRequestToUser(j SignUpRequest) ds.Users {

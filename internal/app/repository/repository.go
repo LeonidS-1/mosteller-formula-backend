@@ -75,7 +75,7 @@ func (r *Repository) AddTokenToBlacklist(ctx context.Context, tokenString string
 		return nil
 	}
 	key := blacklistKeyForToken(tokenString)
-	value := "user_id:" + userID
+	value := "blacklisted"
 	return r.rd.Set(key, value, ttl).Err()
 }
 

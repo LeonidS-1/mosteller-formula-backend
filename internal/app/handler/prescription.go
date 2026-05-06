@@ -177,7 +177,7 @@ func (h *Handler) GetPrescription(ctx *gin.Context) {
 
 // EditPrescription godoc
 // @Summary Изменить рецепт
-// @Description Обновляет поля черновика рецепта: ФИО врача и примечания.
+// @Description Обновляет поле ФИО врача в черновике рецепта.
 // @Tags prescriptions
 // @Accept json
 // @Produce json

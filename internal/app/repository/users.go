@@ -61,29 +61,29 @@ func (r *Repository) CreateUser(j serializer.SignUpRequest) (ds.Users, error) {
 	return user, nil
 }
 
-func (r *Repository) SignIn(j serializer.SignInRequest) (string, error) {
+func (r *Repository) SignIn(j serializer.SignInRequest) (string, ds.Users, error) {
 	if j.Login == "" {
-		return "", errors.New("логин обязателен для заполнения")
+		return "", ds.Users{}, errors.New("логин обязателен для заполнения")
 	}
 	if j.Password == "" {
-		return "", errors.New("пароль обязателен для заполнения")
+		return "", ds.Users{}, errors.New("пароль обязателен для заполнения")
 	}
 	user, err := r.GetUserByLogin(j.Login)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			return "", errors.New("неверный логин или пароль")
+			return "", ds.Users{}, errors.New("неверный логин или пароль")
 		}
-		return "", err
+		return "", ds.Users{}, err
 	}
 	if user.Password != j.Password {
-		return "", errors.New("неверный логин или пароль")
+		return "", ds.Users{}, errors.New("неверный логин или пароль")
 	}
 
 	token, err := GenerateToken(user.UserID, user.IsModerator)
 	if err != nil {
-		return "", err
+		return "", ds.Users{}, err
 	}
-	return token, nil
+	return token, user, nil
 }
 
 func GenerateToken(userID uint, isModerator bool) (string, error) {

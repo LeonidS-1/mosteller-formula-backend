@@ -14,7 +14,6 @@ type Prescription struct {
 	FinishDate     sql.NullTime `gorm:"column:finish_date"`
 	ModeratorID    *uint        `gorm:"column:moderator_id"`
 	DoctorFullName string       `gorm:"column:doctor_full_name;type:varchar(200);not null"`
-	Notes          *string      `gorm:"type:varchar(2000)"`
 
 	Creator   Users  `gorm:"foreignKey:CreatorID"`
 	Moderator *Users `gorm:"foreignKey:ModeratorID"`

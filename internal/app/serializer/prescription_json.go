@@ -15,7 +15,6 @@ type PrescriptionJSON struct {
 	FormingDate            *time.Time `json:"forming_date"`
 	FinishDate             *time.Time `json:"finish_date"`
 	DoctorFullName         string     `json:"doctor_full_name"`
-	Notes                  *string    `json:"notes"`
 	CompletedDoseLineCount int        `json:"completed_dose_line_count"`
 }
 
@@ -37,14 +36,12 @@ func PrescriptionToJSON(p ds.Prescription, creatorLogin, moderatorLogin string, 
 		FormingDate:            p.FormingDate,
 		FinishDate:             finishDate,
 		DoctorFullName:         p.DoctorFullName,
-		Notes:                  p.Notes,
 		CompletedDoseLineCount: completedDoseLineCount,
 	}
 }
 
 type PrescriptionEditJSON struct {
 	DoctorFullName *string `json:"doctor_full_name"`
-	Notes          *string `json:"notes"`
 }
 
 type StatusJSON struct {

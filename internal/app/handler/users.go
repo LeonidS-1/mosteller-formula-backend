@@ -62,7 +62,7 @@ func (h *Handler) CreateUser(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param credentials body serializer.SignInRequest true "Логин и пароль"
-// @Success 200 {object} map[string]string "Токен доступа"
+// @Success 200 {object} serializer.SignInResponse "Токен доступа и роль пользователя"
 // @Failure 400 {object} map[string]string "Неверный запрос"
 // @Failure 401 {object} map[string]string "Неверный логин или пароль"
 // @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
@@ -81,7 +81,7 @@ func (h *Handler) SignIn(ctx *gin.Context) {
 		h.errorHandler(ctx, http.StatusBadRequest, fmt.Errorf("field 'password' is required"))
 		return
 	}
-	token, err := h.Repository.SignIn(j)
+	token, user, err := h.Repository.SignIn(j)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) || err.Error() == "неверный логин или пароль" {
 			h.errorHandler(ctx, http.StatusUnauthorized, fmt.Errorf("invalid login or password"))
@@ -90,7 +90,7 @@ func (h *Handler) SignIn(ctx *gin.Context) {
 		}
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"token": token})
+	ctx.JSON(http.StatusOK, serializer.SignInResponseFromUser(token, user))
 }
 
 // SignOut godoc
